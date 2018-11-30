@@ -17,7 +17,49 @@ GRobotSetting::~GRobotSetting()
     //dtor
 }
 
+void GRobotSetting::doSetting(){
+    bool stop = false;
+    while(true){
+        cout << "What you want ? Please select:" << endl;
+        cout << "[0] Set camera index" << endl;
+        cout << "[1] Take a photo of clean desktop (without any thing)" << endl;
+        cout << "[x] End setting " << endl;
 
+        char inputChar[256];
+        cin.getline(inputChar,256);
+        cout << "You chose : "<< inputChar << endl;
+
+        char chSelected = inputChar[0];
+        switch( chSelected ){
+            case 'x':
+                stop = true;
+                //exit(0);
+                break;
+            case '0':
+                findCameras();
+                break;
+            case '1':
+                getPhotoOfDesktop();
+                break;
+        }
+
+        if( stop==true ){
+            break;
+        }
+    }
+}
+
+
+/*
+  Photo of DeskTop is important.
+  By comparing the current photo and Clean desktop photo,
+  I can recognized thing be added to desktop easily.
+*/
+void GRobotSetting::getPhotoOfDesktop(){
+   // GRobotSetting::
+}
+
+//Tell me which is the main camera, which is the seconde camera ...
 void GRobotSetting::findCameras(){
     VideoCapture cap;
     Mat frame;
@@ -37,6 +79,7 @@ void GRobotSetting::findCameras(){
                 cap >> frame;
                 imshow("Camera",frame);
                 char ch = waitKey(5);
+                //cout << ch << endl;
                 if( ch=='y' ){
                     config.mainCamera = n;
                     jump = true;
@@ -47,6 +90,7 @@ void GRobotSetting::findCameras(){
                 }
             }
             cap.release();
+            destroyWindow("Camera");
         }
         if( jump ){
             break;
@@ -76,6 +120,7 @@ void GRobotSetting::findCameras(){
                 }
             }
             cap.release();
+            destroyWindow("Camera");
         }
         if( jump ){
             break;
@@ -100,16 +145,24 @@ void GRobotSetting::findCameras(){
                     jump = true;
                     break;
                 }
+                if( ch=='n' ){
+                    break;
+                }
             }
-            if( jump ){
-                break;
-            }
+
+            cap.release();
+            destroyWindow("Camera");
+
         }
-        cap.release();
+
+        if( jump ){
+            break;
+        }
+
         n++;
     }
 
-    destroyWindow("Camera");
+
 
     cout << "\n\n===============================" << endl;
     cout << "Main camera is   " << config.mainCamera << endl;

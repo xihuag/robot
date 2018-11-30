@@ -9,9 +9,12 @@ class GRobotSetting
         virtual ~GRobotSetting();
 
         bool saveConfig();
-        void findCameras();
+
+        void doSetting(void);
     protected:
     private:
+        void findCameras();
+        void getPhotoOfDesktop();
 
 };
 }

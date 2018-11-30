@@ -56,6 +56,7 @@
 		<Unit filename="src/GRobotConfig.cpp" />
 		<Unit filename="src/GRobotSetting.cpp" />
 		<Unit filename="src/tool.cpp" />
+		<Unit filename="src/calibration.cpp" />
 		<Extensions>
 			<code_completion />
 			<debugger />

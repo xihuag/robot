@@ -9,6 +9,6 @@
 namespace GRobot{
 
 bool openCamera(cv::VideoCapture& cap, int index);
-
+bool inputInt(int * ptValue);
 }
 #endif // TOOL_H_INCLUDED

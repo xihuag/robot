@@ -14,10 +14,14 @@ class GRobotConfig
 
         int totalCameraCnt;
 
-        static GRobotConfig locdConfig();
+        static GRobotConfig* m_Config;
+
+        static void locdConfig(GRobotConfig* config);
         static const char APP_CONFIG_FILE[];
+        static const GRobotConfig& instance();
     protected:
     private:
+
 };
 }
 #endif // GROBOTCONFIG_H
