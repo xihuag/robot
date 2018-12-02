@@ -6,7 +6,7 @@ namespace GRobot{
 
 //config file name
 const char GRobotConfig::APP_CONFIG_FILE[]="./grobot.cnf";
-GRobotConfig* GRobotConfig::m_Config = nullptr;
+GRobotConfig* GRobotConfig::m_Config = 0;
 
 GRobotConfig::GRobotConfig()
 {
@@ -35,7 +35,7 @@ void GRobotConfig::locdConfig(GRobotConfig* robotConfig){
 }
 
 const GRobotConfig& GRobotConfig::instance(){
-    if( GRobotConfig::m_Config==nullptr){
+    if( GRobotConfig::m_Config==0){
         m_Config = new GRobotConfig();
         GRobotConfig::locdConfig(m_Config);
     }

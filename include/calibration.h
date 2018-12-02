@@ -3,6 +3,7 @@
 #include <opencv2/core.hpp>
 
 namespace GRobot{
+    enum Pattern { CHESSBOARD, CIRCLES_GRID, ASYMMETRIC_CIRCLES_GRID };
     struct MatAndCorners
     {
         cv::Mat frameOriginal;
