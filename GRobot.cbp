@@ -27,6 +27,9 @@
 					<Add option="-s" />
 				</Linker>
 			</Target>
+			<Environment>
+				<Variable name="OPENCV_HOME" value="/usr/local/opencv344" />
+			</Environment>
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />

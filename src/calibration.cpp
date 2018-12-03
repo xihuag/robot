@@ -139,8 +139,8 @@ namespace GRobot{
         Mat frame,frame2;
         Mat grayImg;
 
-        //Size cornersOfChessboard(5,7);
-        Size cornersOfChessboard(6,9);
+        Size boardSize(5,7);
+        //Size boardSize(6,9);
         Size imageSize(0,0);
 
         char actionChar='\0';
@@ -179,7 +179,7 @@ namespace GRobot{
             cvtColor(frame2,grayImg,cv::COLOR_BGR2GRAY);
 
             vector<Point2f> corners;
-            bool ret =cv::findChessboardCorners(grayImg,cornersOfChessboard,corners,CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_FAST_CHECK | CALIB_CB_NORMALIZE_IMAGE);
+            bool ret =cv::findChessboardCorners(grayImg,boardSize,corners,CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_FAST_CHECK | CALIB_CB_NORMALIZE_IMAGE);
             /* findChessboardCorners( grayImg,
                                             cornersOfChessboard,
                                             corners,
@@ -189,7 +189,7 @@ namespace GRobot{
 
                 cornerSubPix( grayImg, corners, Size(11,11),Size(-1,-1), TermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
 
-                drawChessboardCorners(frame2, cornersOfChessboard, corners, true );
+                drawChessboardCorners(frame2, boardSize, corners, true );
                 imshow( "Calibrate camera", frame2);
                 actionChar = waitKey(0);
 
@@ -238,7 +238,34 @@ namespace GRobot{
             it++;
         }
 
-        //runCalibration( imagePoints,imageSize,cornersOfChessboard,CHESSBOARD,1.0,1.0,)
+        float squareSize  = 1.f;                                 //[3]棋盘格角点之间的距离
+        float aspectRatio = 1.f;                                 //[4]长宽比
+
+        Mat   cameraMatrix;                                      //[5]摄像机的内参数矩阵
+        Mat   distCoeffs;                                        //[6]摄像机的畸变系数向量
+        vector<Mat> rvecs,tvecs;
+        vector<float> reprojErrs;
+        double totalAvgErr = 0;
+        runCalibration( imagePoints,imageSize,boardSize,CHESSBOARD,squareSize,aspectRatio,0,
+                        cameraMatrix,distCoeffs,
+                        rvecs,tvecs,
+                        reprojErrs,totalAvgErr);
+
+        Mat undistortedMat;
+        Mat originMat = (validFrames.begin())->frameGray;
+
+        cv::undistort( originMat,undistortedMat,cameraMatrix,distCoeffs);
+
+        vector<Point2f> cornersOneImage = imagePoints[0];
+        Point p1;
+        p1.x = (int)(cornersOneImage[0].x);
+
+        Point p2;
+        Scalar color(128,128,128);
+        cv::line(undistortedMat,cornersOneImage[0],cornersOneImage[5], color );
+
+        imshow( "undistorted ", undistortedMat );
+
 
         waitKey(0);
 
