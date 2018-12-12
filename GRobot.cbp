@@ -51,6 +51,7 @@
 		<Unit filename="include/ConfigLoader.h" />
 		<Unit filename="include/GRobotConfig.h" />
 		<Unit filename="include/GRobotSetting.h" />
+		<Unit filename="include/calibration.h" />
 		<Unit filename="include/global.h" />
 		<Unit filename="include/tool.h" />
 		<Unit filename="main.cpp" />

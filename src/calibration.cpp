@@ -140,8 +140,11 @@ namespace GRobot{
         Mat grayImg;
 
         Size boardSize(5,7);
+        int nSameLineLastPointIndex = boardSize.width * (boardSize.height-1);
         //Size boardSize(6,9);
         Size imageSize(0,0);
+
+        vector<vector<Point2f> > imagePoints;
 
         char actionChar='\0';
 
@@ -154,6 +157,7 @@ namespace GRobot{
         cout << "[c] check current frame valid or not" << endl;
         cout << "[y] use this valid frame" << endl;
         cout << "[n] next valid frame" << endl;
+        cout << "[z] zoom in" << endl;
         cout << "[e] end" << endl;
         cout << "=======================================" << endl;
 
@@ -180,18 +184,24 @@ namespace GRobot{
 
             vector<Point2f> corners;
             bool ret =cv::findChessboardCorners(grayImg,boardSize,corners,CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_FAST_CHECK | CALIB_CB_NORMALIZE_IMAGE);
-            /* findChessboardCorners( grayImg,
-                                            cornersOfChessboard,
-                                            corners,
-                                            CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_FAST_CHECK | CALIB_CB_NORMALIZE_IMAGE);*/
+
 
             if( ret ){
 
                 cornerSubPix( grayImg, corners, Size(11,11),Size(-1,-1), TermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
 
                 drawChessboardCorners(frame2, boardSize, corners, true );
+                cv::line(frame2,corners[0],corners[nSameLineLastPointIndex],Scalar(0,0,255) );
                 imshow( "Calibrate camera", frame2);
+
                 actionChar = waitKey(0);
+
+                if( actionChar=='z'){
+                    Mat bigImg;
+                    cv::resize(frame2,bigImg,Size(frame2.size().width * 2, frame2.size().height*2 ) );
+                    imshow( "Calibrate camera", bigImg);
+                    actionChar = waitKey(0);
+                }
 
                 if( actionChar=='y'){
                     Mat frameOriginal,frameGray;
@@ -202,6 +212,7 @@ namespace GRobot{
                     item.frameGray =frameGray;
                     item.corners = corners;
                     validFrames.push_back(item);
+                    imagePoints.push_back( corners );
                     validFramesCnt++;
                     cout << "Total valid frames " << validFramesCnt << endl;
                 }
@@ -212,31 +223,6 @@ namespace GRobot{
 
         cap.release();
         cv::destroyAllWindows();
-
-        cout << "Do you want to show all captured frames? [y/n]" << endl;
-        char inputChar[256];
-        cin.getline(inputChar,256);
-
-        vector<vector<Point2f> > imagePoints;
-
-        bool reShowAll=false;
-        if( inputChar[0]=='y'){
-            reShowAll =true;
-        }
-
-        int n=0;
-        vector<MatAndCorners>::const_iterator it = validFrames.begin();
-        while( it!=validFrames.end() ){
-            imagePoints.push_back( (*it).corners );
-            n++;
-            if( reShowAll ){
-                char wname[16];
-                sprintf( wname,"Frame %d",n);
-                imshow( wname, (*it).frameOriginal );
-                waitKey(1);
-            }
-            it++;
-        }
 
         float squareSize  = 1.f;                                 //[3]棋盘格角点之间的距离
         float aspectRatio = 1.f;                                 //[4]长宽比
@@ -251,26 +237,50 @@ namespace GRobot{
                         rvecs,tvecs,
                         reprojErrs,totalAvgErr);
 
-        Mat undistortedMat;
-        Mat originMat = (validFrames.begin())->frameGray;
+        cout << "Do you want to show all captured frames? [y/n]" << endl;
+        char inputChar[256];
+        cin.getline(inputChar,256);
 
-        cv::undistort( originMat,undistortedMat,cameraMatrix,distCoeffs);
+        bool reShowAll=false;
+        if( inputChar[0]=='y'){
+            reShowAll =true;
+        }
 
-        vector<Point2f> cornersOneImage = imagePoints[0];
-        Point p1;
-        p1.x = (int)(cornersOneImage[0].x);
+        if( reShowAll ){
+            for( int idx=0; idx<validFrames.size(); idx++ ){
 
-        Point p2;
-        Scalar color(128,128,128);
-        cv::line(undistortedMat,cornersOneImage[0],cornersOneImage[5], color );
+                char wname[16];
+                Mat undistortedMat;
 
-        imshow( "undistorted ", undistortedMat );
+                sprintf( wname,"Frame %d",idx);
+                Mat originMat = validFrames[idx].frameGray;
+                cv::cvtColor(originMat,originMat,COLOR_GRAY2BGR );
 
+                cv::undistort( originMat,undistortedMat,cameraMatrix,distCoeffs);
 
-        waitKey(0);
+                vector<Point2f> cornersOneImage = imagePoints[idx];
+                Point p1;
+                p1.x = (int)(cornersOneImage[0].x);
+                p1.y = (int)(cornersOneImage[0].y);
 
+                Point p2;
 
-        cout << "Press any key to quit" << endl;
+                p2.x = (int)(cornersOneImage[nSameLineLastPointIndex].x);
+                p2.y = (int)(cornersOneImage[nSameLineLastPointIndex].y);
+
+                Scalar color(0,255,0);
+                cv::line( undistortedMat,p1,p2, color ,1);
+
+                imshow( wname, undistortedMat );
+            }
+            cout << "Press any key to quit" << endl;
+            waitKey(0);
+        }
+        else{
+            cout << "Press any key to quit" << endl;
+            waitKey(0);
+        }
+
         cv::destroyAllWindows();
         cout << "finished!" << endl;
     }
