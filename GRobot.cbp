@@ -13,6 +13,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add directory="include" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -22,6 +23,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add directory="include" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -48,16 +50,16 @@
 			<Add library="opencv_calib3d" />
 			<Add directory="$(OPENCV_HOME)/lib" />
 		</Linker>
-		<Unit filename="include/ConfigLoader.h" />
 		<Unit filename="include/GRobotConfig.h" />
 		<Unit filename="include/GRobotSetting.h" />
+		<Unit filename="include/Tracker.h" />
 		<Unit filename="include/calibration.h" />
 		<Unit filename="include/global.h" />
 		<Unit filename="include/tool.h" />
 		<Unit filename="main.cpp" />
-		<Unit filename="src/ConfigLoader.cpp" />
 		<Unit filename="src/GRobotConfig.cpp" />
 		<Unit filename="src/GRobotSetting.cpp" />
+		<Unit filename="src/Tracker.cpp" />
 		<Unit filename="src/calibration.cpp" />
 		<Unit filename="src/tool.cpp" />
 		<Extensions>

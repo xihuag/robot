@@ -3,6 +3,7 @@
 #include "tool.h"
 #include "GRobotSetting.h"
 #include "calibration.h"
+#include "Tracker.h"
 
 
 using namespace std;
@@ -16,6 +17,11 @@ cv::VideoCapture camera3;
 
 int main()
 {
+    Tracker tracker;
+    tracker.run();
+
+    exit(0);
+
     //locad config
     GRobotConfig::instance();
 

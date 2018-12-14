@@ -8,9 +8,10 @@ class GRobotConfig
         GRobotConfig();
         virtual ~GRobotConfig();
 
-        int mainCamera;
-        int secondCamera;
+        int mainCamera;    //index of the main camera
+        int secondCamera;  //index of the second camera
         int thirdCamera;
+
 
         int totalCameraCnt;
 
@@ -18,7 +19,11 @@ class GRobotConfig
 
         static void locdConfig(GRobotConfig* config);
         static const char APP_CONFIG_FILE[];
-        static const GRobotConfig& instance();
+        static GRobotConfig& instance();
+
+        bool save(void);
+
+        GRobotConfig clone(void);
     protected:
     private:
 

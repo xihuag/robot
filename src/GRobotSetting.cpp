@@ -68,7 +68,8 @@ void GRobotSetting::findCameras(){
 
     cout << "Set the main camera." << endl;
 
-    GRobotConfig config;
+    GRobotConfig& configSingleton = GRobotConfig::instance();
+    GRobotConfig config = configSingleton.clone();
 
     bool jump = false;
     while( n<maxCapCount ){
@@ -176,11 +177,8 @@ void GRobotSetting::findCameras(){
     cout << "You chose : "<< inputChar[0] << endl;
 
     if( 'y'==inputChar[0] ){
-        ConfigLoader loader( GRobotConfig::APP_CONFIG_FILE );
-        loader.setInt("MainCameraIndex",config.mainCamera);
-        loader.setInt("SecondCameraIndex",config.secondCamera);
-        loader.setInt("ThirdCameraIndex",config.thirdCamera);
-        //loader.setInt("");
+        config.save();
+        cout << "Camera index setting saved! " << endl;
     }
 }
 }
