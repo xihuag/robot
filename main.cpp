@@ -15,17 +15,38 @@ cv::VideoCapture camera1;
 cv::VideoCapture camera2;
 cv::VideoCapture camera3;
 
-int main()
-{
+
+void tracking(void){
     Tracker tracker;
     tracker.run();
+}
 
-    exit(0);
+void calibrate(){
+    cout << "Camera type:" << endl;
+    cout << "[1] Single Camera" << endl;
+    cout << "[2] Double Camera" << endl;
 
+    char inputChar[256];
+    cin.getline(inputChar,256);
+    cout << "You chose : "<< inputChar << endl;
+
+    char chSelected = inputChar[0];
+    if( chSelected=='2' ){
+        Calibrater calibrater(2);
+        calibrater.doCalibrate();
+    }else{
+        Calibrater calibrater(1);
+        calibrater.doCalibrate();
+    }
+}
+int main()
+{
     //locad config
     GRobotConfig::instance();
 
     GRobotSetting appSetter;
+
+
 
     bool stop = false;
     while(true){
@@ -33,6 +54,7 @@ int main()
         cout << "[0] Do work" << endl;
         cout << "[1] Learn environment" << endl;
         cout << "[2] Calibration" << endl;
+        cout << "[3] Tracking" << endl;
         cout << "[x] Quit " << endl;
 
         char inputChar[256];
@@ -48,7 +70,10 @@ int main()
             case '0':
                 break;
             case '2':
-                doCalibrate();
+                calibrate();
+                break;
+            case '3':
+                tracking();
                 break;
             case '1':
                 appSetter.doSetting();

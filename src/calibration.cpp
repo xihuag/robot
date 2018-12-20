@@ -1,14 +1,13 @@
 #include "opencv2/core.hpp"
-#include <opencv2/core/utility.hpp>
+
 #include "opencv2/imgproc.hpp"
 #include "opencv2/calib3d.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/videoio.hpp"
 #include "opencv2/highgui.hpp"
 
-#include <cctype>
-#include <stdio.h>
-#include <string.h>
+
+
 #include <time.h>
 #include "tool.h"
 #include "calibration.h"
@@ -21,8 +20,40 @@ using namespace std;
 
 namespace GRobot{
 
-    VideoCapture cap;
-    int minValidFrameCnt = 10;
+    Camera::Camera():
+        imageSize(0,0),
+        /*
+        images(vector<Mat>(16)),
+        imagePoints(vector<vector<Point2f> >(16)),
+        cameraMatrix(),                                    //[5]摄像机的内参数矩阵
+        distCoeffs(),                                      //[6]摄像机的畸变系数向量
+        rvecs(vector<Mat>(16)),
+        tvecs(vector<Mat>(16)),
+        reprojErrs(vector<float>(16)),*/
+        totalAvgErr(-1)
+    {
+
+    }
+
+    Camera::~Camera(){
+
+    }
+
+
+    Calibrater::Calibrater(int cameraCount)
+    {
+        m_cameraCount = cameraCount;
+        if( m_cameraCount<1 ){
+            m_cameraCount = 1;
+        }
+
+    }
+
+    Calibrater::~Calibrater()
+    {
+    //dtor
+    }
+
 
     double computeReprojectionErrors(
         const vector<vector<Point3f> >& objectPoints,
@@ -133,18 +164,20 @@ namespace GRobot{
         return ok;
     }
 
-    void doCalibrate(){
-        vector<MatAndCorners> validFrames;
+    void Calibrater::doCalibrate(){
+
+        VideoCapture cap;
+        int minValidFrameCnt = 16;
+
         int validFramesCnt = 0;
-        Mat frame,frame2;
-        Mat grayImg;
+        Mat frame;
+        Mat grayImgA,grayImgB;
 
         Size boardSize(5,7);
         int nSameLineLastPointIndex = boardSize.width * (boardSize.height-1);
-        //Size boardSize(6,9);
-        Size imageSize(0,0);
 
-        vector<vector<Point2f> > imagePoints;
+
+        //vector<vector<Point2f> > points;
 
         char actionChar='\0';
 
@@ -164,9 +197,28 @@ namespace GRobot{
         while( true ){
             cap >> frame;
 
-            if( imageSize.width==0 ){
-                imageSize.width = frame.size().width;
-                imageSize.height = frame.size().height;
+            if( m_cameraA.imageSize.width==0 ){
+
+                if( m_cameraCount>1 ){
+                    m_cameraA.imageSize.width  = frame.size().width/2;
+                    m_cameraA.imageSize.height = frame.size().height;
+
+                    m_cameraA.inParentPosition.x = 0;
+                    m_cameraA.inParentPosition.y = 0;
+                    m_cameraA.inParentPosition.width = m_cameraA.imageSize.width;
+                    m_cameraA.inParentPosition.height = m_cameraA.imageSize.height;
+
+                    m_cameraB.imageSize.width = m_cameraA.imageSize.width ;
+                    m_cameraB.imageSize.height = m_cameraA.imageSize.height;
+
+                    m_cameraB.inParentPosition.x = frame.size().width - m_cameraB.imageSize.width;
+                    m_cameraB.inParentPosition.y = 0;
+                    m_cameraB.inParentPosition.width = m_cameraB.imageSize.width;
+                    m_cameraB.inParentPosition.height = m_cameraB.imageSize.height;
+                }else{
+                    m_cameraA.imageSize.width  = frame.size().width;
+                    m_cameraA.imageSize.height = frame.size().height;
+                }
             }
 
             imshow( "Calibrate camera", frame);
@@ -179,44 +231,87 @@ namespace GRobot{
                 continue;
             }
 
-            frame.copyTo(frame2);
-            cvtColor(frame2,grayImg,cv::COLOR_BGR2GRAY);
+            Mat frameA,frameB;
 
-            vector<Point2f> corners;
-            bool ret =cv::findChessboardCorners(grayImg,boardSize,corners,CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_FAST_CHECK | CALIB_CB_NORMALIZE_IMAGE);
+            if( m_cameraCount>1 ){
+                Mat mA(frame, m_cameraA.inParentPosition );
+                mA.copyTo( frameA );
+                cvtColor(frameA,grayImgA,cv::COLOR_BGR2GRAY);
+
+                Mat mB( frame, m_cameraB.inParentPosition  );
+                mB.copyTo( frameB );
+                cvtColor(frameB,grayImgB,cv::COLOR_BGR2GRAY);
+
+                //imshow( "Frame A", frameA);
+                //imshow( "Frame B", frameB);
+                waitKey( 5 );
+            }else{
+                frame.copyTo( frameA );
+                cvtColor(frameA,grayImgA,cv::COLOR_BGR2GRAY);
+            }
+
+            vector<Point2f> cornersA(64);
+            vector<Point2f> cornersB(64);
+
+            bool ret =cv::findChessboardCorners(grayImgA,boardSize,cornersA,CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_FAST_CHECK | CALIB_CB_NORMALIZE_IMAGE);
+            bool retB = true;
+            if( m_cameraCount>1 ){
+                retB = cv::findChessboardCorners(grayImgB,boardSize,cornersB,CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_FAST_CHECK | CALIB_CB_NORMALIZE_IMAGE);
+            }
 
 
-            if( ret ){
 
-                cornerSubPix( grayImg, corners, Size(11,11),Size(-1,-1), TermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
+            if( ret && retB){
 
-                drawChessboardCorners(frame2, boardSize, corners, true );
-                cv::line(frame2,corners[0],corners[nSameLineLastPointIndex],Scalar(0,0,255) );
-                imshow( "Calibrate camera", frame2);
+                cornerSubPix( grayImgA, cornersA, Size(11,11),Size(-1,-1), TermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
+
+                Mat hasCornersA,hasCornersB;
+                frameA.copyTo(hasCornersA);
+                drawChessboardCorners(hasCornersA, boardSize, cornersA, true );
+                //cv::line(frame2,corners[0],corners[nSameLineLastPointIndex],Scalar(0,0,255) );
+                imshow( "Calibrate camera", hasCornersA );
+
+                if( m_cameraCount>1 ){
+                    cornerSubPix( grayImgB, cornersB, Size(11,11),Size(-1,-1), TermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
+                    frameB.copyTo( hasCornersB );
+                    drawChessboardCorners(hasCornersB, boardSize, cornersB, true );
+                    //cv::line(frame2,corners[0],corners[nSameLineLastPointIndex],Scalar(0,0,255) );
+                    imshow( "Calibrate camera B", hasCornersB);
+                }
 
                 actionChar = waitKey(0);
 
                 if( actionChar=='z'){
                     Mat bigImg;
-                    cv::resize(frame2,bigImg,Size(frame2.size().width * 2, frame2.size().height*2 ) );
+                    cv::resize(hasCornersA,bigImg,Size(frameA.size().width * 2, frameA.size().height*2 ) );
                     imshow( "Calibrate camera", bigImg);
+
+
+                    if( m_cameraCount>1 ){
+                        Mat bigImgB;
+                        cv::resize(hasCornersB,bigImgB,Size(frameB.size().width * 2, frameB.size().height*2 ) );
+                        imshow( "Calibrate camera B", bigImgB);
+                    }
                     actionChar = waitKey(0);
                 }
 
                 if( actionChar=='y'){
-                    Mat frameOriginal,frameGray;
-                    frame2.copyTo( frameOriginal);
-                    grayImg.copyTo( frameGray );
-                    MatAndCorners item;
-                    item.frameOriginal=frameOriginal;
-                    item.frameGray =frameGray;
-                    item.corners = corners;
-                    validFrames.push_back(item);
-                    imagePoints.push_back( corners );
+                    m_cameraA.imagePoints.push_back( cornersA );
+                    m_cameraA.images.push_back(frameA);
+                    //points.push_back(cornersA);
+
+                    if( m_cameraCount>1 ){
+                        m_cameraB.imagePoints.push_back( cornersB );
+                        m_cameraB.images.push_back(frameB);
+                    }
+
                     validFramesCnt++;
                     cout << "Total valid frames " << validFramesCnt << endl;
                 }
 
+            }else{
+
+                cout << "Failed to find corners " << endl;
             }
 
         }
@@ -227,16 +322,18 @@ namespace GRobot{
         float squareSize  = 1.f;                                 //[3]棋盘格角点之间的距离
         float aspectRatio = 1.f;                                 //[4]长宽比
 
-        Mat   cameraMatrix;                                      //[5]摄像机的内参数矩阵
-        Mat   distCoeffs;                                        //[6]摄像机的畸变系数向量
-        vector<Mat> rvecs,tvecs;
-        vector<float> reprojErrs;
-        double totalAvgErr = 0;
-        runCalibration( imagePoints,imageSize,boardSize,CHESSBOARD,squareSize,aspectRatio,0,
-                        cameraMatrix,distCoeffs,
-                        rvecs,tvecs,
-                        reprojErrs,totalAvgErr);
 
+
+        runCalibration( m_cameraA.imagePoints,m_cameraA.imageSize,boardSize,CHESSBOARD,squareSize,aspectRatio,0,
+                        m_cameraA.cameraMatrix,m_cameraA.distCoeffs,
+                        m_cameraA.rvecs,m_cameraA.tvecs,
+                        m_cameraA.reprojErrs,m_cameraA.totalAvgErr);
+        if( m_cameraCount>1 ){
+            runCalibration( m_cameraB.imagePoints,m_cameraB.imageSize,boardSize,CHESSBOARD,squareSize,aspectRatio,0,
+                        m_cameraB.cameraMatrix,m_cameraB.distCoeffs,
+                        m_cameraB.rvecs,m_cameraB.tvecs,
+                        m_cameraB.reprojErrs,m_cameraB.totalAvgErr);
+        }
         cout << "Do you want to show all captured frames? [y/n]" << endl;
         char inputChar[256];
         cin.getline(inputChar,256);
@@ -247,18 +344,19 @@ namespace GRobot{
         }
 
         if( reShowAll ){
-            for( int idx=0; idx<validFrames.size(); idx++ ){
+            for( int idx=0; idx<m_cameraA.images.size(); idx++ ){
 
                 char wname[16];
                 Mat undistortedMat;
 
                 sprintf( wname,"Frame %d",idx);
-                Mat originMat = validFrames[idx].frameGray;
-                cv::cvtColor(originMat,originMat,COLOR_GRAY2BGR );
+                Mat originMat;
+                m_cameraA.images[idx].copyTo( originMat );
+                //cv::cvtColor(originMat,originMat,COLOR_GRAY2BGR );
 
-                cv::undistort( originMat,undistortedMat,cameraMatrix,distCoeffs);
+                cv::undistort( originMat,undistortedMat,m_cameraA.cameraMatrix,m_cameraA.distCoeffs);
 
-                vector<Point2f> cornersOneImage = imagePoints[idx];
+                vector<Point2f> cornersOneImage = m_cameraA.imagePoints[idx];
                 Point p1;
                 p1.x = (int)(cornersOneImage[0].x);
                 p1.y = (int)(cornersOneImage[0].y);

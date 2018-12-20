@@ -4,9 +4,8 @@
 #include <iostream>
 #include <string>
 
-const int SIZE_FILENAME=128;
-const int SIZE_LINE=128;
-
-
-
+namespace GRobot{
+    const int SIZE_FILENAME=128;
+    const int SIZE_LINE=128;
+}
 #endif // GLOBAL_H_INCLUDED
